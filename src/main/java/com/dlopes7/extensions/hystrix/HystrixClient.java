@@ -17,7 +17,12 @@ import java.util.Map;
  */
 public class HystrixClient implements EventHandler {
 
+    public HystrixClient(){
+        this.lastEventType = "";
+    }
+
     EventSource eventSource;
+    String lastEventType;
 
     public MonitorConfiguration getConfiguration() {
         return configuration;
@@ -52,28 +57,29 @@ public class HystrixClient implements EventHandler {
 
         JSONObject jsonObject = new JSONObject(messageEvent.getData());
 
-
-        StringBuilder baseString = new StringBuilder(configuration.getMetricPrefix());
-        baseString.append(HystrixMonitorTask.METRIC_SEPARATOR)
-                .append(jsonObject.getString("type"))
-                .append(HystrixMonitorTask.METRIC_SEPARATOR);
-
-        if(jsonObject.has("group")){
-            baseString.append(jsonObject.getString("group"))
-                    .append(HystrixMonitorTask.METRIC_SEPARATOR);
-        }
-
-        baseString.append(jsonObject.getString("name"))
-                .append(HystrixMonitorTask.METRIC_SEPARATOR);
-
-        populateMetrics(jsonObject, baseString.toString());
-
-        if (jsonObject.getString("type").equals("HystrixThreadPool")){
+        if (jsonObject.getString("type").equals("HystrixCommand") && this.lastEventType.equals("HystrixThreadPool")){
             eventSource.close();
         }
+        else {
 
-       // System.out.println(event + " - " + messageEvent.getData());
 
+            StringBuilder baseString = new StringBuilder(configuration.getMetricPrefix());
+            baseString.append(HystrixMonitorTask.METRIC_SEPARATOR)
+                    .append(jsonObject.getString("type"))
+                    .append(HystrixMonitorTask.METRIC_SEPARATOR);
+
+            if (jsonObject.has("group")) {
+                baseString.append(jsonObject.getString("group"))
+                        .append(HystrixMonitorTask.METRIC_SEPARATOR);
+            }
+
+            baseString.append(jsonObject.getString("name"))
+                    .append(HystrixMonitorTask.METRIC_SEPARATOR);
+
+            populateMetrics(jsonObject, baseString.toString());
+
+        }
+        this.lastEventType = jsonObject.getString("type");
     }
 
 
@@ -112,7 +118,7 @@ public class HystrixClient implements EventHandler {
 
                 metricValue = (Boolean)value ? "1" : "0";
 
-            } else if (value == null){
+            } else if (value == null || value == "null"){
                 // Ignore
             }else {
 
@@ -140,6 +146,4 @@ public class HystrixClient implements EventHandler {
                 MetricWriter.METRIC_CLUSTER_ROLLUP_TYPE_COLLECTIVE);
 
     }
-
-
 }
