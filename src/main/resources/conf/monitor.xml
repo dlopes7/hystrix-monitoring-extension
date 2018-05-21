@@ -1,0 +1,26 @@
+
+
+<monitor>
+    <name>HystrixMonitor</name>
+    <type>managed</type>
+    <enabled>true</enabled>
+    <description>Monitors Hystrix Commands</description>
+    <monitor-configuration/>
+    <monitor-run-task>
+        <execution-style>periodic</execution-style>
+        <execution-frequency-in-seconds>60</execution-frequency-in-seconds>
+        <name>Hystrix Monitor Run Task</name>
+        <display-name>Hystrix Monitor Task</display-name>
+        <description>Hystrix Monitor Task</description>
+        <type>java</type>
+        <execution-timeout-in-secs>60</execution-timeout-in-secs>
+        <task-arguments>
+            <!-- config file-->
+            <argument name="config-file" is-required="true" default-value="monitors/HystrixMonitor/config.yml" />
+        </task-arguments>
+        <java-task>
+            <classpath>hystrix-monitoring-extension.jar</classpath>
+            <impl-class>com.dlopes7.extensions.hystrix.HystrixMonitor</impl-class>
+        </java-task>
+    </monitor-run-task>
+</monitor>
