@@ -43,8 +43,8 @@ public class HystrixMonitor extends AManagedMonitor {
         }
         logger.debug("The raw arguments are " + taskArguments);
         configuration.executeTask();
-        logger.info("ElasticSearch monitor run completed successfully.");
-        return new TaskOutput("Elastic Search monitor run completed successfully.");
+        logger.info("Hystrix Monitor run completed successfully.");
+        return new TaskOutput("Hystrix Monitor run completed successfully.");
     }
 
     private void initialize(Map<String, String> taskArgs) {

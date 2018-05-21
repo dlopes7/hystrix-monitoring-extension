@@ -1,23 +1,13 @@
 package com.dlopes7.extensions.hystrix;
 
 import com.appdynamics.extensions.conf.MonitorConfiguration;
-
 import com.appdynamics.extensions.http.UrlBuilder;
-import com.appdynamics.extensions.util.MetricWriteHelper;
 import com.google.common.base.Strings;
 import com.launchdarkly.eventsource.EventSource;
-import com.singularity.ee.agent.systemagent.api.MetricWriter;
-import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 
-import java.io.OutputStreamWriter;
 import java.net.URI;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by dlopes on 5/20/18.
@@ -47,12 +37,12 @@ public class HystrixMonitorTask implements Runnable {
                 fetchMetrics(displayName);
             }
         } catch (Exception e) {
-            String msg = "Exception while running the Elastic Search task in the server " + displayName;
+            String msg = "Exception while running the Hystrix Client task in the server " + displayName;
             logger.error(msg, e);
             configuration.getMetricWriter().registerError(msg, e);
         } finally {
             long endTime = System.currentTimeMillis() - startTime;
-            logger.debug("Elastic Search monitor thread for server " + displayName + " ended. Time taken is " + endTime);
+            logger.debug("Hystrix Monitor thread for server " + displayName + " ended. Time taken is " + endTime);
         }
 
     }

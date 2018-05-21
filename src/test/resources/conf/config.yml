@@ -4,7 +4,7 @@
 #from your environment. To find the <COMPONENT_ID> in your environment, please follow the screenshot in
 #https://docs.appdynamics.com/display/PRO42/Build+a+Monitoring+Extension+Using+Java
 
-metricPrefix: Server|Component:<COMPONENT_ID>|Custom Metrics|Elastic Search
+metricPrefix: Server|Component:<COMPONENT_ID>|Custom Metrics|Hystrix
 
 servers:
   - displayName: Hystrix1
