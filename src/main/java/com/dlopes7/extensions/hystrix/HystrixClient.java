@@ -1,13 +1,15 @@
 package com.dlopes7.extensions.hystrix;
 
 import com.appdynamics.extensions.conf.MonitorConfiguration;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.launchdarkly.eventsource.EventHandler;
 import com.launchdarkly.eventsource.EventSource;
 import com.launchdarkly.eventsource.MessageEvent;
 import com.singularity.ee.agent.systemagent.api.MetricWriter;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 
 /**
@@ -48,21 +50,27 @@ public class HystrixClient implements EventHandler {
 
     public void onMessage(String event, MessageEvent messageEvent) throws Exception {
 
-        JsonObject jsonObject = new JsonParser().parse(messageEvent.getData()).getAsJsonObject();
-        switch (jsonObject.get("type").getAsString()){
+        JSONObject jsonObject = new JSONObject(messageEvent.getData());
 
-            case "HystrixCommand":
-                Gson gson = new Gson();
-                HystrixCommandModel hystrixCommandModel = gson.fromJson(messageEvent.getData(), HystrixCommandModel.class);
-                printHystrixCommand(hystrixCommandModel);
-                break;
 
-            case "HystrixThreadPool":
-                eventSource.close();
-                break;
+        StringBuilder baseString = new StringBuilder(configuration.getMetricPrefix());
+        baseString.append(HystrixMonitorTask.METRIC_SEPARATOR)
+                .append(jsonObject.getString("type"))
+                .append(HystrixMonitorTask.METRIC_SEPARATOR);
+
+        if(jsonObject.has("group")){
+            baseString.append(jsonObject.getString("group"))
+                    .append(HystrixMonitorTask.METRIC_SEPARATOR);
         }
 
+        baseString.append(jsonObject.getString("name"))
+                .append(HystrixMonitorTask.METRIC_SEPARATOR);
 
+        populateMetrics(jsonObject, baseString.toString());
+
+        if (jsonObject.getString("type").equals("HystrixThreadPool")){
+            eventSource.close();
+        }
 
        // System.out.println(event + " - " + messageEvent.getData());
 
@@ -79,25 +87,52 @@ public class HystrixClient implements EventHandler {
 
     }
 
-    public void printHystrixCommand(HystrixCommandModel hystrixCommandModel){
+    public void populateMetrics(JSONObject jsonObject, String baseString){
 
-        StringBuilder baseString = new StringBuilder(configuration.getMetricPrefix());
-        baseString.append(HystrixMonitorTask.METRIC_SEPARATOR)
-                .append(hystrixCommandModel.getGroup())
-                .append(HystrixMonitorTask.METRIC_SEPARATOR)
-                .append(hystrixCommandModel.getName())
-        .append(HystrixMonitorTask.METRIC_SEPARATOR);
+        Map<String, String> metricsMap = new HashMap<String, String>();
 
+        Iterator<String> keys = jsonObject.keys();
 
+        String metricName;
+        String metricValue = null;
 
-        printMetric(new String(baseString) + "errorCount" , hystrixCommandModel.getErrorCount().toString());
-        printMetric(new String(baseString) + "requestCount", hystrixCommandModel.getRequestCount().toString());
+        while (keys.hasNext()){
 
+            String key = (String)keys.next();
+            metricName = baseString + key;
+            Object value = jsonObject.get(key);
+
+            if ( value instanceof JSONObject ) {
+                populateMetrics((JSONObject) value, metricName + "_");
+
+            }else if (value instanceof String){
+                // Ignore, we can't reliable convert a string to a metric
+
+            }else if (value instanceof Boolean) {
+
+                metricValue = (Boolean)value ? "1" : "0";
+
+            } else if (value == null){
+                // Ignore
+            }else {
+
+                metricValue = value.toString();
+            }
+
+            if (metricValue != null) {
+                printMetric(metricName, metricValue);
+            }
+            metricValue = null;
+
+        }
 
     }
 
     private void printMetric(String metricName, String metricValue){
-        System.out.println(metricName + ": " + metricValue);
+
+        // if(metricName.contains("requestCount")) {
+            System.out.println(metricName + ": " + metricValue);
+        //}
         configuration.getMetricWriter().printMetric(metricName,
                 metricValue,
                 MetricWriter.METRIC_AGGREGATION_TYPE_AVERAGE,
